@@ -1,0 +1,220 @@
+<div class="container-fluid p-4 pb-5">
+  <div class="card bg-light text-dark pt-3mb-3">
+    <div class="row">
+      <div class="col-md-12">
+        <div class="">
+          <h1 class="p-2 pt-4 pb-0">
+            HolidayIt!
+            <small
+              >Effizient Urlaubstage verwenden - Nutze die österreichischen
+              Feiertage perfekt aus!</small
+            >
+          </h1>
+        </div>
+      </div>
+    </div>
+
+    <div class="row p-3">
+      <div class="col-md-3">
+        <form role="form">
+          <div class="form-group">
+            <label> Verfügbare Urlaubstage </label>
+            <input
+              [(ngModel)]="availableHolidays"
+              [ngModelOptions]="{ standalone: true }"
+              (ngModelChange)="hideSuccessAlert()"
+              type="number"
+              class="form-control"
+            />
+          </div>
+        </form>
+      </div>
+
+      <div class="col-md-3">
+        <br />
+        <div class="form-check pt-1">
+          <input
+            (change)="checkboxChange()"
+            class="form-check-input"
+            type="checkbox"
+            value=""
+            id="flexCheckDefault"
+          />
+          <label class="form-check-label" for="flexCheckDefault">
+            Freitag frei?
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div class="row p-3 pb-0">
+      <div class="col-md-12">
+        <form role="form">
+          <div class="form-group">
+            <label>
+              Ab welchem Datum sollen die Urlaubstage verplant werden?
+            </label>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="row p-3">
+      <div class="col-md-3">
+        <form role="form">
+          <div class="form-group">
+            <label> Tag </label>
+            <input
+              [(ngModel)]="day"
+              type="number"
+              class="form-control"
+              [ngModelOptions]="{ standalone: true }"
+              (ngModelChange)="hideSuccessAlert()"
+            />
+          </div>
+        </form>
+      </div>
+      <div class="col-md-3">
+        <form role="form">
+          <div class="form-group">
+            <label> Monat </label>
+            <input
+              [ngModelOptions]="{ standalone: true }"
+              [(ngModel)]="month"
+              type="number"
+              class="form-control"
+              (ngModelChange)="hideSuccessAlert()"
+            />
+          </div>
+        </form>
+      </div>
+      <div class="col-md-3">
+        <form role="form">
+          <div class="form-group">
+            <label> Jahr </label>
+            <input
+              [ngModelOptions]="{ standalone: true }"
+              [(ngModel)]="year"
+              disabled
+              type="number"
+              class="form-control"
+              (ngModelChange)="hideSuccessAlert()"
+            />
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="row p-3 pb-4">
+      <div class="col-md-3">
+        <button
+          type="button"
+          class="btn btn-primary"
+          (click)="createCalenderDaysAndAddHolidayRecommendationsToTable()"
+        >
+          Neu berechnen
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="showSuccessAlert" class="pt-3 pb-0">
+    <div class="alert alert-success" role="alert">
+      <strong>Berechnung erfolgreich!</strong> Deine
+      {{ this.availableHolidays }} Urlaubstage wurden ab dem
+      {{ day + "." + month + "." + year }} verteilt.
+    </div>
+  </div>
+
+  <div *ngIf="dataLoaded" class="row p-2 pt-1">
+    <h1 class="p-2 pt-1 pb-0">
+      Mit folgenden Urlaubstagen bekommst du das meiste aus deiner Planung raus:
+    </h1>
+
+    <div *ngFor="let result of sparenSieResults" class="col-md-4">
+      <h3>
+        Sie bekommen mit nur
+        <strong> {{ result.holidaysNeeded }} eingesetzten Tagen </strong>
+        insgesamt
+        <span style="color: green">
+          <strong> {{ result.streak }} Tage frei! </strong></span
+        >
+      </h3>
+      <ul>
+        <li *ngFor="let date of result.dateStreak" class="list-item">
+          <div
+            *ngIf="
+              result.holidayDatesNeeded.includes(date);
+              then content;
+              else other_content
+            "
+          >
+            here is ignored
+          </div>
+          <ng-template #content>
+            <strong>
+              <u>{{ date }} </u></strong
+            ></ng-template
+          >
+          <ng-template #other_content>{{ date }}</ng-template>
+        </li>
+      </ul>
+      <br />
+    </div>
+  </div>
+  <div *ngIf="dataLoaded" class="row">
+    <div class="col-md-2"></div>
+
+    <div class="col-md-8">
+      <div class="pt-3 pb-0">
+        <div class="alert alert-info" role="alert">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            fill="currentColor"
+            class="bi bi-info-circle"
+            viewBox="0 0 16 16"
+            class=""
+          >
+            <path
+              d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"
+            />
+            <path
+              d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"
+            />
+          </svg>
+          <label class="p-2"
+            >Die in blau hinterlegten Zeilen in der Tabelle zeigen die
+            potentiell eingetragenen Urlaubstage. Dies dient zur
+            Veranschaulichung der potentiellen Urlaubslänge.</label
+          >
+        </div>
+      </div>
+      <table class="table table-hover">
+        <thead>
+          <tr>
+            <th>Datum</th>
+            <th>Wochentag</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            *ngFor="let day of calendarDays"
+            [ngClass]="
+              day.isFreeDay === true
+                ? 'table-success'
+                : day.holidayRecommendation === true
+                ? 'table-info'
+                : ''
+            "
+          >
+            <td>{{ day.prettyDate }}</td>
+            <td>{{ day.weekDay }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="col-md-2"></div>
+  </div>
+</div>
