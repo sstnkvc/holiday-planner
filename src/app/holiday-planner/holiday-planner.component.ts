@@ -1,316 +1,269 @@
 import { Component, OnInit } from '@angular/core';
-import { IDay } from './models/day';
+import { CalendarDay } from './models/day';
 import { HolidayService } from './service/holiday.service';
-import { IHolidayResponse } from './models/holiday-response';
+import { PublicHoliday } from './models/holiday-response';
+import { WorkdaySequence } from './models/holiday-recommendation';
+import { VacationPeriod } from './models/holiday-streak';
+import { CalendarService } from './services/calendar.service';
+import { CALENDAR_CONSTANTS } from './constants/calendar.constants';
+import { DateUtils } from './utils/date.utils';
 
-interface yyy {
-  indexBeginOfFalse: number | undefined;
-  indexEndOfFalse: number | undefined;
-  dateBeginOfFalse: string | undefined;
-  dateEndOfFalse: string | undefined;
-  streak: number | undefined;
-}
-
-interface sparenSie {
-  dateStreak: string[];
-  streak: number;
-  holidaysNeeded: number;
-  holidayDatesNeeded: string[];
-}
-
+/**
+ * Main component for the holiday planner application
+ */
 @Component({
   selector: 'app-holiday-planner',
   templateUrl: './holiday-planner.component.html',
   styleUrls: ['./holiday-planner.component.css'],
 })
 export class HolidayPlannerComponent implements OnInit {
-  constructor(private holidayService: HolidayService) {}
+  // Calendar data
+  calendarDays: CalendarDay[] = [];
+  publicHolidays: PublicHoliday[] = [];
 
-  calendarDays: IDay[] = [];
-  holidays: IHolidayResponse[] = [];
-
-  year = 2023;
-  month = 1;
-  day = 1;
-  availableHolidays = 25;
+  // Form inputs
+  year = new Date().getFullYear();
+  month = new Date().getMonth() + 1;
+  day = new Date().getDate();
+  availableVacationDays = CALENDAR_CONSTANTS.DEFAULT_VACATION_DAYS;
   fridaysFree = false;
 
-  recListString: string[] = [];
-  sparenSieResults: sparenSie[] = [];
-  weekEndArr: string[] = ['Samstag', 'Sonntag'];
+  // Visual calendar data
+  calendarMonth = this.month;
+  calendarYear = this.year;
+  daysInMonth = DateUtils.getDaysInMonth(this.calendarMonth, this.calendarYear);
+  firstDayOfMonth = DateUtils.getFirstDayOfMonth(
+    this.calendarMonth,
+    this.calendarYear
+  );
 
+  // Results
+  recommendedDates: string[] = [];
+  vacationPeriods: VacationPeriod[] = [];
+  weekendDays: string[] = [...CALENDAR_CONSTANTS.DEFAULT_WEEKEND_DAYS];
+
+  // UI state
   showSuccessAlert = false;
   dataLoaded = false;
 
-  async ngOnInit() {
-    this.holidays = await this.holidayService.getHolidays('AT');
-    // this.createCalenderDaysAndAddHolidayRecommendationsToTable();
+  /**
+   * Constructor
+   */
+  constructor(
+    private holidayService: HolidayService,
+    private calendarService: CalendarService
+  ) {}
+
+  /**
+   * Lifecycle hook: component initialization
+   */
+  async ngOnInit(): Promise<void> {
+    // Fetch public holidays
+    this.publicHolidays = await this.holidayService.getPublicHolidays(
+      'AT',
+      this.year
+    );
+
+    // Initialize calendar data
+    const today = new Date();
+    this.calendarMonth = today.getMonth() + 1;
+    this.calendarYear = today.getFullYear();
+    this.updateCalendarData();
   }
 
-  hideSuccessAlert() {
+  /**
+   * Updates the calendar data based on the current month and year
+   */
+  updateCalendarData(): void {
+    this.daysInMonth = DateUtils.getDaysInMonth(
+      this.calendarMonth,
+      this.calendarYear
+    );
+    this.firstDayOfMonth = DateUtils.getFirstDayOfMonth(
+      this.calendarMonth,
+      this.calendarYear
+    );
+
+    // If we don't have holidays data yet, fetch it
+    if (this.publicHolidays.length === 0) {
+      this.holidayService
+        .getPublicHolidays('AT', this.calendarYear)
+        .then((holidays) => {
+          this.publicHolidays = holidays;
+        });
+    }
+  }
+
+  /**
+   * Navigate to the previous month within the current year
+   */
+  previousMonth(): void {
+    if (this.calendarMonth > 1) {
+      this.calendarMonth--;
+      this.updateCalendarData();
+    }
+  }
+
+  /**
+   * Navigate to the next month within the current year
+   */
+  nextMonth(): void {
+    if (this.calendarMonth < 12) {
+      this.calendarMonth++;
+      this.updateCalendarData();
+    }
+  }
+
+  /**
+   * Check if previous month navigation is disabled
+   */
+  isPreviousMonthDisabled(): boolean {
+    return this.calendarMonth === 1;
+  }
+
+  /**
+   * Check if next month navigation is disabled
+   */
+  isNextMonthDisabled(): boolean {
+    return this.calendarMonth === 12;
+  }
+
+  /**
+   * Hide the success alert
+   */
+  hideSuccessAlert(): void {
     this.showSuccessAlert = false;
   }
 
-  createCalenderDaysAndAddHolidayRecommendationsToTable() {
-    this.calendarDays = this.createCalendarYear2023();
-    const rec = this.getHolidayRecommendations();
-    let availableCopy = this.availableHolidays;
-
-    const list: string[] = [];
-
-    rec.forEach((recs) => {
-      if (availableCopy > 0) {
-        let beginIndex = recs.indexBeginOfFalse as number;
-        let endIndex = recs.indexEndOfFalse as number;
-
-        while (beginIndex <= endIndex && availableCopy !== 0) {
-          const dateToBePushed = this.calendarDays[beginIndex].prettyDate;
-          list.push(dateToBePushed);
-          beginIndex++;
-          availableCopy--;
-        }
-      }
-    });
-
-    this.recListString = list;
-    this.recListString.forEach((x) => x.concat('\n'));
-    list.forEach((entry) => {
-      const def = this.calendarDays.find((day) => day.prettyDate === entry);
-      if (def != null) {
-        def.holidayRecommendation = true;
-      }
-    });
-
-    this.createHolidayInfos(list);
-    this.dataLoaded = true;
-    this.showSuccessAlert = true;
-    return list;
-  }
-
-  checkboxChange() {
+  /**
+   * Handle checkbox change for Friday as weekend
+   */
+  checkboxChange(): void {
     this.fridaysFree = !this.fridaysFree;
+
     if (this.fridaysFree) {
-      this.weekEndArr.push('Freitag');
+      this.weekendDays.push('Freitag');
     } else {
-      this.weekEndArr = this.weekEndArr.filter((entry) => entry !== 'Freitag');
+      this.weekendDays = this.weekendDays.filter((day) => day !== 'Freitag');
     }
+
     this.hideSuccessAlert();
   }
 
-  createHolidayInfos(listWhereHolidayShouldBeUsed: string[]): sparenSie[] {
-    const allGesamtDates: string[] = [];
-    const sparenSieArray: sparenSie[] = [];
+  /**
+   * Main method to calculate and display vacation recommendations
+   */
+  calculateHolidayRecommendations(): void {
+    // Create start date
+    const startDate = new Date(this.year, this.month - 1, this.day);
 
-    listWhereHolidayShouldBeUsed.forEach(
-      (holidayDateThatIsBeingRecommended) => {
-        if (allGesamtDates.includes(holidayDateThatIsBeingRecommended)) {
-          return;
-        }
-
-        const indexOfHolidayThatIsBeingRecommended =
-          this.calendarDays.findIndex(
-            (day) => day.prettyDate === holidayDateThatIsBeingRecommended
-          );
-
-        let backwardIndex = indexOfHolidayThatIsBeingRecommended - 1;
-        let backwardCounter = 0;
-        let backwardDates: string[] = [];
-
-        while (
-          this.calendarDays[backwardIndex] !== undefined &&
-          (this.calendarDays[backwardIndex].isFreeDay === true ||
-            this.calendarDays[backwardIndex].holidayRecommendation === true)
-        ) {
-          backwardDates.push(this.calendarDays[backwardIndex].prettyDate);
-          backwardCounter++;
-          backwardIndex--;
-        }
-
-        let forwardIndex = indexOfHolidayThatIsBeingRecommended + 1;
-        let forwardCounter = 0;
-        let forwardDates: string[] = [];
-
-        while (
-          this.calendarDays[forwardIndex] !== undefined &&
-          (this.calendarDays[forwardIndex].isFreeDay === true ||
-            this.calendarDays[forwardIndex].holidayRecommendation === true)
-        ) {
-          forwardDates.push(this.calendarDays[forwardIndex].prettyDate);
-
-          forwardCounter++;
-          forwardIndex++;
-        }
-
-        const gesamtDates = [
-          ...backwardDates.reverse(),
-          holidayDateThatIsBeingRecommended,
-          ...forwardDates,
-        ];
-
-        let holidayCounter = 0;
-
-        const holidaysDateNeeded: string[] = [];
-
-        gesamtDates.forEach((date) => {
-          const foundDay = this.calendarDays.find(
-            (day) => day.prettyDate === date
-          );
-          if (foundDay?.holidayRecommendation === true) {
-            holidayCounter++;
-            holidaysDateNeeded.push(date);
-          }
-        });
-
-        allGesamtDates.push(...gesamtDates);
-        sparenSieArray.push({
-          dateStreak: gesamtDates,
-          streak: gesamtDates.length,
-          holidaysNeeded: holidayCounter,
-          holidayDatesNeeded: holidaysDateNeeded,
-        });
-      }
+    // Create calendar with all days of the year
+    this.calendarDays = this.calendarService.createCalendar(
+      startDate,
+      this.publicHolidays,
+      this.weekendDays
     );
 
-    const orderedSparenArray = sparenSieArray.sort(function (a, b) {
-      if (a.streak > b.streak) {
-        return -1;
-      }
-      if (a.streak < b.streak) {
-        return 1;
-      }
-      if (a.holidaysNeeded > b.holidaysNeeded) {
-        return 1;
-      }
-      if (a.holidaysNeeded < b.holidaysNeeded) {
-        return -1;
-      }
-      // a must be equal to b
-      return 0;
-    });
-
-    this.sparenSieResults = orderedSparenArray;
-
-    return orderedSparenArray;
-  }
-
-  getHolidayRecommendations(): yyy[] {
-    const data = this.calendarDays.map((entry, index) => {
-      return {
-        date: entry.prettyDate,
-        index: index,
-        isFreeDay: entry.isFreeDay,
-      };
-    });
-
-    const datesWithIndexes = data.map((result) => {
-      return {
-        index: result.index,
-        date: result.date,
-        isFreeDay: result.isFreeDay,
-      };
-    });
-
-    let beginOccurenceOfFalse = undefined;
-    let endOccurenceOfFalse = undefined;
-    const objectListx: any[] = [];
-
-    for (let index = 0; index < datesWithIndexes.length; index++) {
-      const element = datesWithIndexes[index];
-      if (element.isFreeDay === false) {
-        if (beginOccurenceOfFalse !== undefined) {
-          continue;
-        }
-
-        beginOccurenceOfFalse = index;
-        continue;
-      } else {
-        if (beginOccurenceOfFalse === undefined) {
-          continue;
-        }
-
-        endOccurenceOfFalse = index - 1;
-        const object: yyy = {
-          indexBeginOfFalse: beginOccurenceOfFalse,
-          dateBeginOfFalse: datesWithIndexes[beginOccurenceOfFalse].date,
-          dateEndOfFalse: datesWithIndexes[endOccurenceOfFalse].date,
-          indexEndOfFalse: endOccurenceOfFalse,
-          streak: endOccurenceOfFalse - beginOccurenceOfFalse + 1,
-        };
-
-        index = endOccurenceOfFalse + 1;
-        beginOccurenceOfFalse = undefined;
-        endOccurenceOfFalse = undefined;
-        objectListx.push(object);
-      }
-    }
-
-    const sortedObjList = objectListx.sort(
-      (obj1, obj2) => obj1.streak - obj2.streak
+    // Find work day sequences that could be used for holidays
+    const workdaySequences = this.calendarService.findWorkdaySequences(
+      this.calendarDays
     );
 
-    return sortedObjList;
+    // Distribute available vacation days to maximize time off
+    this.recommendedDates = this.calendarService.distributeVacationDays(
+      this.calendarDays,
+      workdaySequences,
+      this.availableVacationDays
+    );
+
+    // Mark recommended days in the calendar
+    this.calendarService.markRecommendedDays(
+      this.calendarDays,
+      this.recommendedDates
+    );
+
+    // Create and sort vacation periods
+    const periods = this.calendarService.createVacationPeriods(
+      this.calendarDays,
+      this.recommendedDates
+    );
+    this.vacationPeriods =
+      this.calendarService.sortVacationPeriodsByEfficiency(periods);
+
+    // Update UI state
+    this.dataLoaded = true;
+    this.showSuccessAlert = true;
   }
 
-  createCalendarYear2023(): IDay[] {
-    const weekday = [
-      'Sonntag',
-      'Montag',
-      'Dienstag',
-      'Mittwoch',
-      'Donnerstag',
-      'Freitag',
-      'Samstag',
-    ];
+  /**
+   * Gets an array of empty cells for the calendar grid
+   */
+  getEmptyCells(): number[] {
+    return Array(this.firstDayOfMonth)
+      .fill(0)
+      .map((_, i) => i);
+  }
 
-    // Erstelle ein leeres Array, um die Daten zu speichern
-    let calendar: IDay[] = [];
+  /**
+   * Gets an array of days for the current month
+   */
+  getDaysArray(): number[] {
+    return Array(this.daysInMonth)
+      .fill(0)
+      .map((_, i) => i + 1);
+  }
 
-    // Erstelle ein neues Date-Objekt für den 1. Januar 2023
-    let currentDate = new Date(this.year, this.month - 1, this.day);
+  /**
+   * Checks if a day is today
+   */
+  isToday(day: number): boolean {
+    return DateUtils.isToday(day, this.calendarMonth, this.calendarYear);
+  }
 
-    // Iteriere über jeden Tag im Jahr
-    while (currentDate.getFullYear() === 2023) {
-      // Erstelle ein neues Objekt und speichere die Daten
-      let dayObject = {
-        prettyDate: currentDate.toLocaleDateString(),
-        isoDate: this.formatDate(currentDate.toLocaleDateString()),
-        weekDay: weekday[currentDate.getDay()],
-        isFreeDay: false,
-        holidayRecommendation: false,
-      };
-      // Füge das Objekt dem Array hinzu
-      calendar.push(dayObject);
+  /**
+   * Checks if a day is a weekend
+   */
+  isWeekend(day: number): boolean {
+    return DateUtils.isWeekend(day, this.calendarMonth, this.calendarYear);
+  }
 
-      // Erhöhe das Datum um einen Tag
-      currentDate.setDate(currentDate.getDate() + 1);
+  /**
+   * Checks if a day is a holiday
+   */
+  isHoliday(day: number): boolean {
+    // Create a date string in ISO format (YYYY-MM-DD) for the current day
+    const month = this.calendarMonth.toString().padStart(2, '0');
+    const dayStr = day.toString().padStart(2, '0');
+    const dateStr = `${this.calendarYear}-${month}-${dayStr}`;
+
+    // Check if this date is in the holidays array
+    return this.publicHolidays.some((holiday) => holiday.date === dateStr);
+  }
+
+  /**
+   * Gets the full month name for the current calendar month
+   */
+  getMonthName(): string {
+    return CALENDAR_CONSTANTS.MONTHS[this.calendarMonth - 1];
+  }
+
+  /**
+   * Gets the weekday name for a date string in DD.MM.YYYY format
+   *
+   * @param dateString The date string in DD.MM.YYYY format
+   * @returns The weekday name
+   */
+  getWeekdayForDate(dateString: string): string {
+    const parts = dateString.split('.');
+    if (parts.length !== 3) {
+      return '';
     }
 
-    calendar.forEach((entry) => {
-      if (this.weekEndArr.includes(entry.weekDay)) {
-        entry.isFreeDay = true;
-      }
-    });
+    const day = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10) - 1; // JavaScript months are 0-indexed
+    const year = parseInt(parts[2], 10);
 
-    const holidaysDates = this.holidays.map((holiday) => holiday.date);
-
-    holidaysDates.forEach((holidayDate) => {
-      calendar.forEach((calEntry) => {
-        if (calEntry.isoDate === holidayDate) {
-          calEntry.isFreeDay = true;
-        }
-      });
-    });
-
-    // Gib das Array zurück
-    return calendar;
-  }
-
-  formatDate(dateString: string) {
-    var parts = dateString.split('.');
-    const day = parts[0];
-    const month = parts[1];
-    const year = parts[2];
-
-    return year + '-' + ('0' + month).slice(-2) + '-' + ('0' + day).slice(-2);
+    const date = new Date(year, month, day);
+    return CALENDAR_CONSTANTS.WEEKDAYS[date.getDay()];
   }
 }

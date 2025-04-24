@@ -1,220 +1,521 @@
-<div class="container-fluid p-4 pb-5">
-  <div class="card bg-light text-dark pt-3mb-3">
-    <div class="row">
-      <div class="col-md-12">
-        <div class="">
-          <h1 class="p-2 pt-4 pb-0">
-            HolidayIt!
-            <small
-              >Effizient Urlaubstage verwenden - Nutze die österreichischen
-              Feiertage perfekt aus!</small
+<main class="holiday-app">
+  <!-- Hero Section with Gradient Background -->
+  <section class="hero-section py-5">
+    <div class="container">
+      <div class="row align-items-center">
+        <div class="col-12 col-lg-6 mb-5 mb-lg-0">
+          <div class="d-flex align-items-center mb-4">
+            <div
+              class="app-icon me-3 d-flex align-items-center justify-content-center"
             >
-          </h1>
+              <i class="bi bi-calendar-check"></i>
+            </div>
+            <h1 class="app-title mb-0">
+              Holiday<span class="text-primary">It</span
+              ><span class="text-accent">!</span>
+            </h1>
+          </div>
+
+          <p class="app-tagline mb-4">Smarter Urlaub. Mehr Freizeit.</p>
+
+          <h2 class="hero-title display-5 fw-bold mb-4">
+            Maximiere deine Urlaubstage
+          </h2>
+
+          <p class="lead mb-4">
+            Nutze die österreichischen Feiertage optimal aus und genieße
+            <span class="text-primary fw-bold">mehr freie Tage</span> mit
+            weniger Urlaubstagen.
+          </p>
+
+          <div class="feature-list mb-5">
+            <div class="feature-item d-flex align-items-center mb-3">
+              <div class="feature-icon me-3">
+                <i class="bi bi-graph-up-arrow"></i>
+              </div>
+              <div class="feature-text">Optimale Effizienz</div>
+            </div>
+            <div class="feature-item d-flex align-items-center mb-3">
+              <div class="feature-icon me-3">
+                <i class="bi bi-calendar-plus"></i>
+              </div>
+              <div class="feature-text">Mehr Freizeit</div>
+            </div>
+            <div class="feature-item d-flex align-items-center mb-4">
+              <div class="feature-icon me-3">
+                <i class="bi bi-magic"></i>
+              </div>
+              <div class="feature-text">Intelligente Planung</div>
+            </div>
+
+            <a
+              href="#planner"
+              class="btn btn-light btn-lg hero-cta w-100 w-sm-auto"
+            >
+              <i class="bi bi-calendar-check me-2"></i>
+              Urlaubsplanung starten
+            </a>
+          </div>
+        </div>
+
+        <div class="col-12 col-lg-6">
+          <div class="calendar-card shadow">
+            <!-- Calendar Header -->
+            <div class="calendar-header">
+              <div
+                class="d-flex justify-content-between align-items-center p-3"
+              >
+                <button
+                  class="btn-icon"
+                  (click)="previousMonth()"
+                  [disabled]="isPreviousMonthDisabled()"
+                  [class.disabled]="isPreviousMonthDisabled()"
+                  title="Vorheriger Monat"
+                  aria-label="Vorheriger Monat"
+                >
+                  <i class="bi bi-chevron-left"></i>
+                </button>
+                <div class="month-year text-center">
+                  <div class="month">
+                    {{ getMonthName() }}
+                  </div>
+                  <div class="year">{{ calendarYear }}</div>
+                </div>
+                <button
+                  class="btn-icon"
+                  (click)="nextMonth()"
+                  [disabled]="isNextMonthDisabled()"
+                  [class.disabled]="isNextMonthDisabled()"
+                  title="Nächster Monat"
+                  aria-label="Nächster Monat"
+                >
+                  <i class="bi bi-chevron-right"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Calendar Body -->
+            <div class="calendar-body">
+              <!-- Weekday Headers -->
+              <div class="calendar-weekdays">
+                <div class="weekday">Mo</div>
+                <div class="weekday">Di</div>
+                <div class="weekday">Mi</div>
+                <div class="weekday">Do</div>
+                <div class="weekday">Fr</div>
+                <div class="weekday weekend">Sa</div>
+                <div class="weekday weekend">So</div>
+              </div>
+
+              <!-- Calendar Grid -->
+              <div class="calendar-grid">
+                <!-- Empty cells for days before the 1st of the month -->
+                <div
+                  class="day-cell empty"
+                  *ngFor="let i of getEmptyCells()"
+                ></div>
+
+                <!-- Actual days -->
+                <div
+                  class="day-cell"
+                  *ngFor="let i of getDaysArray()"
+                  [class.today]="isToday(i)"
+                  [class.active]="isToday(i)"
+                  [class.weekend]="isWeekend(i)"
+                  [class.holiday]="isHoliday(i)"
+                >
+                  <span class="day-number">{{ i }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Calendar Footer -->
+            <div class="calendar-footer">
+              <div class="legend-item">
+                <span class="legend-dot holiday-dot"></span>
+                <span class="legend-text">Feiertag</span>
+              </div>
+              <div class="legend-item">
+                <span class="legend-dot weekend-dot"></span>
+                <span class="legend-text">Wochenende</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
+  </section>
 
-    <div class="row p-3">
-      <div class="col-md-3">
-        <form role="form">
-          <div class="form-group">
-            <label> Verfügbare Urlaubstage </label>
-            <input
-              [(ngModel)]="availableHolidays"
-              [ngModelOptions]="{ standalone: true }"
-              (ngModelChange)="hideSuccessAlert()"
-              type="number"
-              class="form-control"
-            />
-          </div>
-        </form>
+  <!-- Planner Section -->
+  <section id="planner" class="planner-section py-5">
+    <div class="container">
+      <div class="section-header text-center mb-5">
+        <h2 class="section-title mb-3">Urlaubsplanung</h2>
+        <p class="section-description text-muted">
+          Gib deine Urlaubsdetails ein und lass uns die optimale Planung
+          berechnen
+        </p>
       </div>
 
-      <div class="col-md-3">
-        <br />
-        <div class="form-check pt-1">
-          <input
-            (change)="checkboxChange()"
-            class="form-check-input"
-            type="checkbox"
-            value=""
-            id="flexCheckDefault"
-          />
-          <label class="form-check-label" for="flexCheckDefault">
-            Freitag frei?
-          </label>
+      <div class="card shadow-sm border-0 mb-5">
+        <div class="card-body p-3 p-sm-4 p-lg-5">
+          <form class="planner-form">
+            <div class="row g-3 g-md-4 mb-4">
+              <div class="col-12 col-md-6">
+                <div class="form-group">
+                  <label
+                    for="availableHolidays"
+                    class="form-label d-flex align-items-center mb-2"
+                  >
+                    <i class="bi bi-briefcase me-2"></i>
+                    Verfügbare Urlaubstage
+                  </label>
+                  <div class="input-group">
+                    <input
+                      id="availableHolidays"
+                      [(ngModel)]="availableVacationDays"
+                      [ngModelOptions]="{ standalone: true }"
+                      (ngModelChange)="hideSuccessAlert()"
+                      type="number"
+                      class="form-control"
+                      min="1"
+                      max="365"
+                      aria-describedby="holidaysHelp"
+                    />
+                    <span class="input-group-text">Tage</span>
+                  </div>
+                  <small id="holidaysHelp" class="form-text text-muted mt-2">
+                    Wie viele Urlaubstage stehen dir zur Verfügung?
+                  </small>
+                </div>
+              </div>
+
+              <div class="col-12 col-md-6">
+                <div class="form-group">
+                  <label class="form-label d-flex align-items-center mb-3">
+                    <i class="bi bi-calendar-week me-2"></i>
+                    Wochenendeinstellungen
+                  </label>
+                  <div class="form-check form-switch">
+                    <input
+                      id="fridayFree"
+                      (change)="checkboxChange()"
+                      type="checkbox"
+                      class="form-check-input"
+                      role="switch"
+                      [checked]="fridaysFree"
+                    />
+                    <label class="form-check-label" for="fridayFree">
+                      Freitag frei?
+                    </label>
+                  </div>
+                  <small class="form-text text-muted mt-2">
+                    Aktiviere diese Option, wenn du freitags generell frei hast
+                  </small>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group mb-4">
+              <label class="form-label d-flex align-items-center mb-3">
+                <i class="bi bi-calendar-event me-2"></i>
+                Ab welchem Datum sollen die Urlaubstage verplant werden?
+              </label>
+
+              <div class="row g-2 g-md-3">
+                <div class="col-4">
+                  <label for="day" class="form-label small text-muted"
+                    >Tag</label
+                  >
+                  <input
+                    id="day"
+                    [(ngModel)]="day"
+                    type="number"
+                    class="form-control"
+                    [ngModelOptions]="{ standalone: true }"
+                    (ngModelChange)="hideSuccessAlert()"
+                    min="1"
+                    max="31"
+                  />
+                </div>
+
+                <div class="col-4">
+                  <label for="month" class="form-label small text-muted"
+                    >Monat</label
+                  >
+                  <input
+                    id="month"
+                    [(ngModel)]="month"
+                    type="number"
+                    class="form-control"
+                    [ngModelOptions]="{ standalone: true }"
+                    (ngModelChange)="hideSuccessAlert()"
+                    min="1"
+                    max="12"
+                  />
+                </div>
+
+                <div class="col-4">
+                  <label for="year" class="form-label small text-muted"
+                    >Jahr</label
+                  >
+                  <input
+                    id="year"
+                    [(ngModel)]="year"
+                    type="number"
+                    class="form-control bg-light"
+                    [ngModelOptions]="{ standalone: true }"
+                    (ngModelChange)="hideSuccessAlert()"
+                    disabled
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div class="d-grid">
+              <button
+                type="button"
+                class="btn btn-primary btn-lg submit-btn py-2 py-md-3"
+                (click)="calculateHolidayRecommendations()"
+                aria-label="Urlaubsempfehlungen berechnen"
+              >
+                <i class="bi bi-magic me-2"></i>
+                Optimalen Urlaub berechnen
+              </button>
+            </div>
+          </form>
         </div>
       </div>
-    </div>
 
-    <div class="row p-3 pb-0">
-      <div class="col-md-12">
-        <form role="form">
-          <div class="form-group">
-            <label>
-              Ab welchem Datum sollen die Urlaubstage verplant werden?
-            </label>
+      <!-- Success Alert -->
+      <div *ngIf="showSuccessAlert" class="alert-container mb-5">
+        <div class="alert alert-success shadow-sm border-0" role="alert">
+          <div class="d-flex">
+            <div class="alert-icon me-3">
+              <i class="bi bi-check-circle-fill"></i>
+            </div>
+            <div class="alert-content flex-grow-1">
+              <h4 class="alert-heading mb-1">Berechnung erfolgreich!</h4>
+              <p class="mb-0">
+                Deine {{ availableVacationDays }} Urlaubstage wurden ab dem
+                {{ day + "." + month + "." + year }} optimal verteilt.
+              </p>
+            </div>
+            <button
+              type="button"
+              class="btn-close"
+              aria-label="Close"
+              (click)="hideSuccessAlert()"
+            ></button>
           </div>
-        </form>
+        </div>
       </div>
-    </div>
 
-    <div class="row p-3">
-      <div class="col-md-3">
-        <form role="form">
-          <div class="form-group">
-            <label> Tag </label>
-            <input
-              [(ngModel)]="day"
-              type="number"
-              class="form-control"
-              [ngModelOptions]="{ standalone: true }"
-              (ngModelChange)="hideSuccessAlert()"
-            />
-          </div>
-        </form>
-      </div>
-      <div class="col-md-3">
-        <form role="form">
-          <div class="form-group">
-            <label> Monat </label>
-            <input
-              [ngModelOptions]="{ standalone: true }"
-              [(ngModel)]="month"
-              type="number"
-              class="form-control"
-              (ngModelChange)="hideSuccessAlert()"
-            />
-          </div>
-        </form>
-      </div>
-      <div class="col-md-3">
-        <form role="form">
-          <div class="form-group">
-            <label> Jahr </label>
-            <input
-              [ngModelOptions]="{ standalone: true }"
-              [(ngModel)]="year"
-              disabled
-              type="number"
-              class="form-control"
-              (ngModelChange)="hideSuccessAlert()"
-            />
-          </div>
-        </form>
-      </div>
-    </div>
+      <!-- Results Section -->
+      <div *ngIf="dataLoaded">
+        <div class="section-header text-center mb-5">
+          <h2 class="section-title mb-3">Optimale Urlaubsplanung</h2>
+          <p class="section-description text-muted">
+            Hier sind die besten Optionen für deinen Urlaub, sortiert nach
+            Effizienz
+          </p>
+        </div>
 
-    <div class="row p-3 pb-4">
-      <div class="col-md-3">
-        <button
-          type="button"
-          class="btn btn-primary"
-          (click)="createCalenderDaysAndAddHolidayRecommendationsToTable()"
-        >
-          Neu berechnen
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <div *ngIf="showSuccessAlert" class="pt-3 pb-0">
-    <div class="alert alert-success" role="alert">
-      <strong>Berechnung erfolgreich!</strong> Deine
-      {{ this.availableHolidays }} Urlaubstage wurden ab dem
-      {{ day + "." + month + "." + year }} verteilt.
-    </div>
-  </div>
-
-  <div *ngIf="dataLoaded" class="row p-2 pt-1">
-    <h1 class="p-2 pt-1 pb-0">
-      Mit folgenden Urlaubstagen bekommst du das meiste aus deiner Planung raus:
-    </h1>
-
-    <div *ngFor="let result of sparenSieResults" class="col-md-4">
-      <h3>
-        Sie bekommen mit nur
-        <strong> {{ result.holidaysNeeded }} eingesetzten Tagen </strong>
-        insgesamt
-        <span style="color: green">
-          <strong> {{ result.streak }} Tage frei! </strong></span
-        >
-      </h3>
-      <ul>
-        <li *ngFor="let date of result.dateStreak" class="list-item">
+        <div class="row g-3 g-md-4 mb-5">
           <div
-            *ngIf="
-              result.holidayDatesNeeded.includes(date);
-              then content;
-              else other_content
-            "
+            *ngFor="let result of vacationPeriods; let i = index"
+            class="col-12 col-sm-6 col-lg-4"
           >
-            here is ignored
-          </div>
-          <ng-template #content>
-            <strong>
-              <u>{{ date }} </u></strong
-            ></ng-template
-          >
-          <ng-template #other_content>{{ date }}</ng-template>
-        </li>
-      </ul>
-      <br />
-    </div>
-  </div>
-  <div *ngIf="dataLoaded" class="row">
-    <div class="col-md-2"></div>
+            <div class="efficiency-card" [class.top-recommendation]="i === 0">
+              <div class="efficiency-card-header">
+                <h3 class="efficiency-card-title mb-2">
+                  Urlaubsoption {{ i + 1 }}
+                </h3>
+                <div class="efficiency-card-value mb-1">
+                  {{ result.totalDays }}
+                </div>
+                <div class="efficiency-card-subtitle">
+                  Tage frei mit nur
+                  {{ result.requiredVacationDays }} Urlaubstagen
+                </div>
+              </div>
 
-    <div class="col-md-8">
-      <div class="pt-3 pb-0">
-        <div class="alert alert-info" role="alert">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
-            fill="currentColor"
-            class="bi bi-info-circle"
-            viewBox="0 0 16 16"
-            class=""
-          >
-            <path
-              d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"
-            />
-            <path
-              d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"
-            />
-          </svg>
-          <label class="p-2"
-            >Die in blau hinterlegten Zeilen in der Tabelle zeigen die
-            potentiell eingetragenen Urlaubstage. Dies dient zur
-            Veranschaulichung der potentiellen Urlaubslänge.</label
-          >
+              <div class="efficiency-card-body">
+                <div class="efficiency-card-detail mb-3">
+                  <div class="efficiency-card-detail-icon">
+                    <i class="bi bi-calculator"></i>
+                  </div>
+                  <div class="efficiency-card-detail-label">
+                    Effizienz-Ratio:
+                  </div>
+                  <div class="efficiency-card-detail-value fw-bold">
+                    {{ result.efficiencyRatio | number : "1.2-2" }}
+                  </div>
+                </div>
+
+                <div class="efficiency-card-detail mb-3">
+                  <div class="efficiency-card-detail-icon">
+                    <i class="bi bi-calendar-range"></i>
+                  </div>
+                  <div class="efficiency-card-detail-label">Urlaubstage:</div>
+                  <div class="efficiency-card-detail-value">
+                    {{ result.requiredVacationDays }}
+                  </div>
+                </div>
+
+                <div class="efficiency-card-detail mb-4">
+                  <div class="efficiency-card-detail-icon">
+                    <i class="bi bi-calendar-week"></i>
+                  </div>
+                  <div class="efficiency-card-detail-label">Freie Tage:</div>
+                  <div class="efficiency-card-detail-value">
+                    {{ result.totalDays }}
+                  </div>
+                </div>
+
+                <div class="efficiency-card-dates">
+                  <h5 class="mb-3 fs-6 fw-bold">
+                    <i class="bi bi-calendar-date me-2"></i> Zeitraum:
+                  </h5>
+                  <div class="efficiency-card-dates-container">
+                    <div
+                      *ngFor="let date of result.dates"
+                      class="efficiency-card-date"
+                      [class.highlight]="result.vacationDates.includes(date)"
+                    >
+                      <span class="efficiency-card-date-text">
+                        <span class="weekday-name">{{
+                          getWeekdayForDate(date)
+                        }}</span>
+                        {{ date }}
+                      </span>
+                      <i
+                        *ngIf="result.vacationDates.includes(date)"
+                        class="bi bi-briefcase-fill efficiency-card-date-icon"
+                        title="Urlaubstag"
+                      ></i>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Calendar Table -->
+        <div class="calendar-section mb-5">
+          <div class="section-header mb-4">
+            <h3 class="h4 mb-3">Jahreskalender</h3>
+            <p class="text-muted">
+              Übersicht aller Tage mit Markierungen für Feiertage und empfohlene
+              Urlaubstage
+            </p>
+          </div>
+
+          <div class="alert alert-info mb-4 shadow-sm border-0" role="alert">
+            <div class="d-flex flex-column flex-sm-row align-items-sm-center">
+              <i class="bi bi-info-circle me-0 me-sm-3 mb-2 mb-sm-0 fs-4"></i>
+              <div>
+                <div class="mb-1 mb-sm-0">
+                  <span class="legend-dot holiday-dot me-1"></span>
+                  <span class="legend-text-sm">Empfohlene Urlaubstage</span>
+                </div>
+                <div>
+                  <span class="legend-dot free-dot me-1"></span>
+                  <span class="legend-text-sm"
+                    >Bereits freie Tage (Wochenenden/Feiertage)</span
+                  >
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="table table-hover border">
+              <thead class="table-light">
+                <tr>
+                  <th scope="col">Datum</th>
+                  <th scope="col" class="d-none d-sm-table-cell">Wochentag</th>
+                  <th scope="col" class="text-center">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  *ngFor="let day of calendarDays"
+                  [ngClass]="
+                    day.isFreeDay
+                      ? 'table-success'
+                      : day.isRecommendedHoliday
+                      ? 'table-info'
+                      : ''
+                  "
+                >
+                  <td>
+                    {{ day.displayDate }}
+                    <small class="d-inline d-sm-none text-muted"
+                      >({{ day.weekdayName }})</small
+                    >
+                  </td>
+                  <td class="d-none d-sm-table-cell">{{ day.weekdayName }}</td>
+                  <td class="text-center">
+                    <span
+                      *ngIf="day.isFreeDay"
+                      class="badge bg-success rounded-pill"
+                    >
+                      <i
+                        class="bi bi-check-circle-fill d-none d-sm-inline me-1"
+                      ></i>
+                      Frei
+                    </span>
+                    <span
+                      *ngIf="day.isRecommendedHoliday"
+                      class="badge bg-info text-dark rounded-pill"
+                    >
+                      <i
+                        class="bi bi-briefcase-fill d-none d-sm-inline me-1"
+                      ></i>
+                      Urlaub
+                    </span>
+                    <span
+                      *ngIf="!day.isFreeDay && !day.isRecommendedHoliday"
+                      class="badge bg-light text-dark rounded-pill"
+                    >
+                      <i class="bi bi-building d-none d-sm-inline me-1"></i>
+                      Arbeit
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
-      <table class="table table-hover">
-        <thead>
-          <tr>
-            <th>Datum</th>
-            <th>Wochentag</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr
-            *ngFor="let day of calendarDays"
-            [ngClass]="
-              day.isFreeDay === true
-                ? 'table-success'
-                : day.holidayRecommendation === true
-                ? 'table-info'
-                : ''
-            "
-          >
-            <td>{{ day.prettyDate }}</td>
-            <td>{{ day.weekDay }}</td>
-          </tr>
-        </tbody>
-      </table>
     </div>
-    <div class="col-md-2"></div>
-  </div>
-</div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer py-4 bg-light">
+    <div class="container">
+      <div class="row align-items-center justify-content-between">
+        <div class="col-md-6">
+          <div class="d-flex align-items-center mb-3 mb-md-0">
+            <div class="app-icon-sm me-2">
+              <i class="bi bi-calendar-check"></i>
+            </div>
+            <span class="fw-bold"
+              >Holiday<span class="text-primary">It</span>!</span
+            >
+            <span class="ms-2 text-muted small"
+              >Smarter Urlaub. Mehr Freizeit.</span
+            >
+          </div>
+        </div>
+        <div class="col-md-6 text-md-end">
+          <p class="mb-0 text-muted small">
+            © {{ year }} HolidayIt! - Alle Rechte vorbehalten
+          </p>
+        </div>
+      </div>
+    </div>
+  </footer>
+</main>
